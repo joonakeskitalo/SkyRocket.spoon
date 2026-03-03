@@ -223,31 +223,17 @@ function HammerDrag:handleDrag()
                     print("Error: Could not retrieve grid cell for target window")
                     return nil
                 end
-                local canvasCell = hs.geometry.copy(self:getCanvasGridCell(self.windowCanvas))
 
                 local mouseOriginCell = HammerDrag:getGridCellForCoordinates(mouseOrigin.x, mouseOrigin.y)
                 local mouseCell = HammerDrag:getGridCellForCoordinates(mouse.x, mouse.y)
 
                 local newCell = hs.geometry.copy(windowCell)
 
-                -- TODO: Don't resize
+                -- Update the grid cell based on the movement
+                newCell.x = windowCell.x + (mouseCell.x - mouseOriginCell.x)
+                newCell.y = windowCell.y + (mouseCell.y - mouseOriginCell.y)
 
                 if self.preview == true then
-                    newCell.x = canvasCell.x + (mouseCell.x - mouseOriginCell.x)
-                    newCell.y = canvasCell.y + (mouseCell.y - mouseOriginCell.y)
-                    -- local snappedFrame = self.grid.getCell(newCell, self.targetWindow:screen())
-                    --
-                    -- -- Update the canvas to match the snapped frame
-                    -- self.windowCanvas:topLeft({
-                    --     x = snappedFrame.x,
-                    --     y = snappedFrame.y
-                    -- })
-                    -- self.windowCanvas:size({
-                    --     w = snappedFrame.w,
-                    --     h = snappedFrame.h
-                    -- })
-
-                    -- With Preview
                     local snappedFrame = self.grid.getCell(newCell, self.targetWindow:screen())
 
                     -- Apply screen margin adjustments
@@ -283,12 +269,11 @@ function HammerDrag:handleDrag()
                         h = snappedFrame.h - self.grid.MARGINX - yAdjust - hAdjust
                     })
                 else
-                    newCell.x = newCell.x + (mouseCell.x - mouseOriginCell.x)
-                    newCell.y = newCell.y + (mouseCell.y - mouseOriginCell.y)
+                    -- Apply the updated grid cell
                     self.grid.set(self.targetWindow, newCell)
+                    -- Reset the mouse position to prevent cumulative deltas
+                    self.originalMousePos = mouse
                 end
-                self.originalMousePos = mouse
-
             else
                 local newX = current.x + dx
                 local newY = current.y + dy
@@ -327,7 +312,7 @@ function HammerDrag:handleDrag()
                 local currentMouseCell = HammerDrag:getGridCellForCoordinates(mouse.x, mouse.y)
 
                 -- Copy the original window's grid cell to modify dimensions
-                local newCell = originalGridCell
+                local newCell = hs.geometry.copy(originalGridCell)
 
                 -- Adjust the grid cell based on the resizing quadrant
                 if self.startQuadrant == "topLeft" then
@@ -353,7 +338,6 @@ function HammerDrag:handleDrag()
 
                 -- Update the canvas for visual feedback
                 if self.preview then
-                    -- With Preview
                     local snappedFrame = self.grid.getCell(newCell, self.targetWindow:screen())
 
                     -- Apply screen margin adjustments
@@ -386,10 +370,9 @@ function HammerDrag:handleDrag()
                     })
                     self.windowCanvas:size({
                         w = snappedFrame.w - self.grid.MARGINX - xAdjust - wAdjust,
-                        h = snappedFrame.h - self.grid.MARGINX - yAdjust - hAdjust
+                        h = snappedFrame.h - self.grid.MARGINY - yAdjust - hAdjust
                     })
                 else
-                    -- Without Preview
                     -- Apply the updated grid cell
                     self.grid.set(self.targetWindow, newCell)
                     -- Reset the mouse position to prevent cumulative deltas
